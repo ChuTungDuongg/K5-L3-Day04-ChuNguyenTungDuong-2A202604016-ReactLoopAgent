@@ -1,0 +1,247 @@
+{
+  "summary": {
+    "total_cases": 1,
+    "scored_cases": 1,
+    "unscored_cases": 0,
+    "score_0_100": 100.0,
+    "partial_mean_0_100": null
+  },
+  "config": {
+    "provider": "openai",
+    "model": "gpt-6-luna",
+    "judge_provider": "openai",
+    "judge_model": "gpt-6-luna",
+    "max_steps": 8,
+    "dataset": "core"
+  },
+  "cases": [
+    {
+      "id": "A5",
+      "question": "Tôi cần danh sách đầy đủ tất cả incident GitHub Actions trong năm 2025. Hãy tìm dữ liệu và nói rõ độ đầy đủ của kết quả, đừng bịa.",
+      "expected": "Snapshot chỉ có tối đa 50 incident gần nhất; không thể chứng minh danh sách đầy đủ cho 2025. Không kết luận không có incident hoặc đưa danh sách giả.",
+      "scenario": "normal",
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "judge_provider": "openai",
+      "judge_model": "gpt-6-luna",
+      "result": {
+        "status": "completed",
+        "answer": "Tôi **không thể xác nhận danh sách đầy đủ tất cả incident GitHub Actions trong năm 2025** bằng dữ liệu hiện có.\n\n- Nguồn GitHub Status được chụp lúc **2026-11-09 03:50 UTC**. Công cụ tìm kiếm chỉ xét **50 incident gần nhất** và hiển thị tối đa **5 kết quả khớp**; do đó không bao quát được chắc chắn toàn bộ năm 2025.\n- Truy vấn theo “Actions” ghi nhận **23 incident khớp trong 50 incident gần nhất**, nhưng 5 kết quả được trả về đều có thời điểm cập nhật trong tháng 11/2026. Truy vấn gợi ý “GitHub Actions” cũng chỉ trả 5 kết quả, với các cập nhật trong tháng 10–11/2026.\n- Các mốc trên là **thời điểm cập nhật**, không chứng minh thời điểm sự cố xảy ra. Dữ liệu trả về không cung cấp incident năm 2025 để đối chiếu.\n\nVì vậy, liệt kê các incident năm 2025 từ kết quả này sẽ không đáng tin cậy; việc không thấy incident năm 2025 **không chứng minh rằng không có**. Muốn có danh sách đầy đủ cần nguồn lưu trữ/API có thể truy vấn toàn bộ incident trong khoảng thời gian 2025, thay vì giới hạn 50 incident gần nhất.",
+        "trace": [
+          {
+            "event": "model",
+            "step": 0,
+            "finish": "tool_calls"
+          },
+          {
+            "event": "tool",
+            "step": 0,
+            "name": "get_status",
+            "arguments": {
+              "provider": "github",
+              "component": "GitHub Actions"
+            },
+            "result": {
+              "provider": "github",
+              "captured_at": "2026-11-09T03:50:47.065020+00:00",
+              "overall": {
+                "indicator": "none",
+                "description": "All Systems Operational"
+              },
+              "components": [],
+              "incidents": [
+                {
+                  "id": "t89g2q1800fr",
+                  "name": "Incident with Actions",
+                  "status": "resolved",
+                  "updated_at": "2026-11-05T17:42:35.455Z"
+                },
+                {
+                  "id": "xr3myzj7ms51",
+                  "name": "Incident with Actions and Pages",
+                  "status": "resolved",
+                  "updated_at": "2026-11-07T01:04:38.647Z"
+                },
+                {
+                  "id": "ntrfd2jqldn6",
+                  "name": "Delayed Actions status check results",
+                  "status": "resolved",
+                  "updated_at": "2026-10-28T22:29:49.032Z"
+                },
+                {
+                  "id": "q29p76qtnkyk",
+                  "name": "Incident with Actions",
+                  "status": "resolved",
+                  "updated_at": "2026-11-05T00:04:42.627Z"
+                },
+                {
+                  "id": "8tzbpcnl75jp",
+                  "name": "Degraded availability for GitHub Actions, GitHub Pages and Webhooks",
+                  "status": "resolved",
+                  "updated_at": "2026-10-22T13:12:51.444Z"
+                }
+              ],
+              "matching_incidents_in_last_50": 11,
+              "note": "Chỉ tìm theo chuỗi trong 50 incident gần nhất; không tìm thấy không chứng minh không có sự cố.",
+              "source": "https://www.githubstatus.com"
+            }
+          },
+          {
+            "event": "model",
+            "step": 1,
+            "finish": "tool_calls"
+          },
+          {
+            "event": "tool",
+            "step": 1,
+            "name": "get_status",
+            "arguments": {
+              "provider": "github",
+              "component": "Actions"
+            },
+            "result": {
+              "provider": "github",
+              "captured_at": "2026-11-09T03:50:47.065020+00:00",
+              "overall": {
+                "indicator": "none",
+                "description": "All Systems Operational"
+              },
+              "components": [
+                {
+                  "name": "Actions",
+                  "status": "operational"
+                }
+              ],
+              "incidents": [
+                {
+                  "id": "pfbmpxxfq1cy",
+                  "name": "Degraded performance for multiple GitHub services",
+                  "status": "resolved",
+                  "updated_at": "2026-11-06T00:20:49.369Z"
+                },
+                {
+                  "id": "t89g2q1800fr",
+                  "name": "Incident with Actions",
+                  "status": "resolved",
+                  "updated_at": "2026-11-05T17:42:35.455Z"
+                },
+                {
+                  "id": "h02n9572mx9y",
+                  "name": "Incident with Actions",
+                  "status": "resolved",
+                  "updated_at": "2026-11-07T01:10:18.506Z"
+                },
+                {
+                  "id": "xr3myzj7ms51",
+                  "name": "Incident with Actions and Pages",
+                  "status": "resolved",
+                  "updated_at": "2026-11-07T01:04:38.647Z"
+                },
+                {
+                  "id": "smtdswd1h2w4",
+                  "name": "Incident with Pull Requests, Git Operations and Issues",
+                  "status": "resolved",
+                  "updated_at": "2026-11-04T11:50:06.459Z"
+                }
+              ],
+              "matching_incidents_in_last_50": 23,
+              "note": "Chỉ tìm theo chuỗi trong 50 incident gần nhất; không tìm thấy không chứng minh không có sự cố.",
+              "source": "https://www.githubstatus.com"
+            }
+          },
+          {
+            "event": "model",
+            "step": 2,
+            "finish": "stop"
+          }
+        ],
+        "usage": [
+          {
+            "prompt_tokens": 585,
+            "completion_tokens": 23,
+            "total_tokens": 608,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "cache_write_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          },
+          {
+            "prompt_tokens": 981,
+            "completion_tokens": 21,
+            "total_tokens": 1002,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "cache_write_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          },
+          {
+            "prompt_tokens": 1386,
+            "completion_tokens": 301,
+            "total_tokens": 1687,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "cache_write_tokens": 1383,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        ]
+      },
+      "grade": {
+        "score": 100,
+        "raw_judge_score": 100,
+        "dimensions": {
+          "factuality": 40,
+          "completeness": 25,
+          "evidence": 20,
+          "boundaries": 15
+        },
+        "status": "scored",
+        "reason": "Câu trả lời bám sát snapshot: nêu rõ giới hạn 50 incident gần nhất và 5 kết quả hiển thị, phân biệt thời điểm cập nhật với thời điểm xảy ra, và không suy diễn rằng năm 2025 không có incident. Các số liệu được nêu khớp với trace.",
+        "improvement": "Có thể thêm liên kết trực tiếp đến GitHub Status hoặc ghi rõ hai truy vấn tương ứng với số liệu 11 và 23 để người đọc dễ kiểm tra.",
+        "mechanical": {
+          "violations": [],
+          "score_cap": 100,
+          "tool_calls": 2,
+          "tool_steps": 2
+        },
+        "judge_usage": {
+          "prompt_tokens": 1670,
+          "completion_tokens": 646,
+          "total_tokens": 2316,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "cache_write_tokens": 1667,
+            "audio_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 509,
+            "audio_tokens": 0,
+            "accepted_prediction_tokens": 0,
+            "rejected_prediction_tokens": 0
+          }
+        },
+        "judge_trace_truncated": false
+      }
+    }
+  ]
+}

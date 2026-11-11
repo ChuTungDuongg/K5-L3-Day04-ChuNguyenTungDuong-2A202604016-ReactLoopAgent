@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ReAct Lab · Trace Explorer</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body class="presenting">
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="#H6"><span class="brand-mark">R<span>↗</span></span><span>ReAct Lab<small>TRACE EXPLORER</small></span></a>
+      <div class="sidebar-intro"><span class="eyebrow">DAY 04 / BÀI CHÍNH</span><p>Đi từ câu hỏi đến bằng chứng.</p></div>
+      <label class="field-label" for="report-select">Phiên bản kết quả</label>
+      <select id="report-select" disabled><option>Đang đọc dữ liệu…</option></select>
+      <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="case-search" type="search" placeholder="Tìm case, câu hỏi…" aria-label="Tìm case" autocomplete="off"></div>
+      <div id="group-filter" class="segmented" aria-label="Nhóm case">
+        <button type="button" data-group="all" aria-pressed="true">Tất cả</button>
+        <button type="button" data-group="E" aria-pressed="false">E · 6</button>
+        <button type="button" data-group="A" aria-pressed="false">A · 8</button>
+        <button type="button" data-group="H" aria-pressed="false">H · 8</button>
+      </div>
+      <div class="list-heading"><span>CÁC TÌNH HUỐNG</span><span id="visible-count">22 CASE</span></div>
+      <nav id="case-list" aria-label="Danh sách case"><p class="muted">Đang tải…</p></nav>
+      <div class="sidebar-footer"><span class="status-dot"></span><span>Kết quả đã lưu<small>Không gọi API · Không tốn token</small></span></div>
+    </aside>
+
+    <main id="main">
+      <header class="topbar"><span class="breadcrumb">Status Investigation Agent <span>/</span> Trace đã lưu</span><div class="topbar-actions"><button id="present-toggle" class="text-button" type="button" aria-pressed="true">Chế độ đầy đủ</button><button id="fullscreen" class="text-button" type="button" aria-label="Bật hoặc tắt toàn màn hình">⤢ Toàn màn hình</button><button id="refresh" class="text-button" type="button">↻ Tải lại file</button></div></header>
+      <section class="overview" aria-label="Tổng quan bộ eval">
+        <div><span class="eyebrow">MỘT VÒNG LẶP. TỪNG BƯỚC RÕ RÀNG.</span><h1>Khám phá cách agent trả lời.</h1><p id="report-caption" class="muted">22 tình huống, cùng một vòng ReAct.</p></div>
+        <div class="summary-stats"><div><span id="overall-score">—</span><small>điểm bộ eval</small></div><div><span id="scored-count">—</span><small>case đã chấm</small></div></div>
+      </section>
+      <details class="panel lab-guide">
+        <summary><span><span class="guide-symbol" aria-hidden="true">◎</span> Hiểu bài lab để trình bày <small>Bài toán · Tools · Luồng chạy · Kịch bản demo</small></span><span class="guide-expand">Mở hướng dẫn ＋</span></summary>
+        <div class="guide-content">
+          <div class="guide-intro"><span class="eyebrow">BẠN ĐANG XÂY GÌ?</span><h3>Một agent biết kiểm tra trước khi kết luận.</h3><p>Người dùng hỏi GitHub hoặc Cloudflare có sự cố gì, ảnh hưởng dịch vụ nào và có liên quan đến lỗi của họ không. Bạn tự viết vòng lặp Python để model chọn tool, đọc bằng chứng, tìm tiếp khi cần rồi trả lời có nguồn và nêu phần chưa biết.</p><p>Agent kiểm tra <strong>trạng thái dịch vụ công khai</strong>, không đăng nhập tài khoản GitHub hay xem workflow trong repo cá nhân. <strong>GitHub Actions</strong> ở đây là tên dịch vụ của GitHub.</p></div>
+          <div class="guide-flow" aria-label="Luồng agent"><span>① Câu hỏi</span><span aria-hidden="true">→</span><span>② Model chọn tool</span><span aria-hidden="true">→</span><span>③ Python chạy tool</span><span aria-hidden="true">→</span><span>④ Kết quả về model</span><span aria-hidden="true">↺</span><span>⑤ Trả lời + nguồn</span></div>
+          <div class="guide-sections">
+            <section><h4>Hai tool mà model được gọi</h4><div class="table-wrap"><table><thead><tr><th>Tool / tham số</th><th>Dùng để làm gì?</th><th>Giới hạn cần nhớ</th></tr></thead><tbody>
+              <tr><td><code>get_status(provider, component)</code><small>Ví dụ: github, Actions</small></td><td>Xem trạng thái tổng thể, component khớp, danh sách incident và ID.</td><td>Tìm chuỗi trong 50 incident gần nhất, trả tối đa 5 incident khớp. Dùng tên component ngắn; rỗng chưa chứng minh không có sự cố.</td></tr>
+              <tr><td><code>get_incident_details(provider, incident_id)</code></td><td>Đọc trạng thái, phạm vi, các cập nhật, thời gian và URL nguồn của một incident.</td><td>Chỉ tra được incident trong cửa sổ dữ liệu. Trả hai update mới nhất và update đầu tiên; mỗi update tối đa 900 ký tự. Xem <code>truncated</code> và <code>updates_total</code>.</td></tr>
+            </tbody></table></div><p class="microcopy"><code>tools.execute(name, args)</code> là hàm Python định tuyến lời gọi đến tool tương ứng. Nó không phải tool thứ ba mà model được giới thiệu.</p></section>
+            <section><h4>Bốn thứ dễ nhầm</h4><ul>
+              <li><strong>Snapshot / live:</strong> snapshot là dữ liệu đã lưu để so sánh các lần eval công bằng hơn; live gọi status API thật. UI này đọc lại trace snapshot đã lưu.</li>
+              <li><strong>Status / incident:</strong> dịch vụ đang <code>operational</code> trong snapshot vẫn có sự cố lịch sử <code>resolved</code>. Đọc một incident cũ không đủ xác nhận trạng thái dịch vụ.</li>
+              <li><strong>Model / tool:</strong> model yêu cầu gọi hàm; Python thực thi hàm. Một lượt model có thể yêu cầu nhiều tools, rồi nhận tất cả kết quả về đúng <code>tool_call_id</code>.</li>
+              <li><strong>Trace / suy nghĩ:</strong> trace là nhật ký lời gọi và kết quả quan sát được, không phải suy nghĩ nội bộ của model. Các trường <code>step</code> bắt đầu từ 0.</li>
+            </ul></section>
+            <section><h4>Đọc một case trên giao diện</h4><ol>
+              <li>Đọc câu hỏi và phân biệt yêu cầu hỏi trạng thái, incident hay cả hai.</li>
+              <li>Xem từng lượt: model trả <code>tool_calls</code>, Python chạy hàm với arguments nào, tool trả gì.</li>
+              <li>Model trả <code>stop</code> và không còn call thì mới xét hoàn thành; có thể phải sửa nguồn trước. Hết <code>max_steps</code> thì chưa hoàn thành.</li>
+              <li>Đối chiếu final answer, nguồn, dữ liệu thiếu hoặc bị cắt và nhận xét judge.</li>
+            </ol><p><strong>37 unit tests</strong> kiểm tra code offline. <strong>22 case eval</strong> gọi model thật để kiểm tra hành vi. Điểm gồm chính xác 40, đầy đủ 25, bằng chứng 20, giới hạn suy luận 15; kiểm tra bằng code có thể áp trần điểm. <code>completed</code> không bảo đảm trả lời đúng.</p></section>
+            <section class="demo-script"><span class="eyebrow">GỢI Ý TRÌNH BÀY 3–5 PHÚT</span><h4>Demo H6, rồi kể một lỗi thật</h4><p><strong>Mở đầu:</strong> “Em xây một ReAct loop bằng Python, giúp model dùng dữ liệu status làm bằng chứng thay vì trả lời đoán.”</p><p><strong>Bấm H6:</strong> “Lượt đầu kiểm tra Actions và đọc incident ban đầu. Lượt tiếp model theo ID trong liên kết để đọc incident gộp. Cuối cùng nó trả lời trạng thái, nguyên nhân có trong dữ liệu và giới hạn do nội dung bị cắt.” Mở JSON để chỉ ra arguments, result và URL; dùng nút <em>Từng lượt</em> để trình bày.</p><p><strong>Kể lỗi:</strong> chọn V6 → H2 để thấy chỉ đọc incident, thiếu <code>get_status</code> nên bị giới hạn 50 điểm; đổi sang V7 → H2 để đối chiếu. Hoặc chọn V5 → A5: thiếu URL và sửa nguồn lặp đến hết lượt. Đọc trace thật để tránh nhầm nguyên nhân.</p><p><strong>Kết thúc:</strong> “Em cải tiến prompt và cách dành lượt tổng hợp, kiểm tra nguồn. Điểm judge chỉ tham khảo; một lần chạy tốt chưa chứng minh agent ổn định.”</p></section>
+          </div>
+        </div>
+      </details>
+      <div id="error-panel" class="error-panel" role="alert" hidden></div>
+      <div id="content" aria-busy="true">
+        <section class="case-heading">
+          <div class="case-heading-main"><div class="case-kicker"><span id="case-id" class="case-pill">H6</span><span id="case-group">Đang tải tình huống</span><span id="case-status" class="badge"></span></div><h2 id="case-question">Đang đọc kết quả đã lưu…</h2><div id="case-meta" class="case-meta"></div></div>
+          <div class="case-score"><span id="case-score">—</span><small>/ 100</small><span id="case-delta" class="delta"></span></div>
+        </section>
+
+        <div class="detail-grid">
+          <section class="panel trace-panel" aria-label="Trace agent">
+            <div class="panel-header"><div><span class="eyebrow">BẰNG CHỨNG THỰC THI</span><h3>Hành trình của agent</h3></div><span id="trace-count" class="badge neutral"></span></div>
+            <div class="trace-toolbar"><div class="view-switch" aria-label="Cách xem trace"><button id="view-timeline" type="button" aria-pressed="true">Dòng thời gian</button><button id="view-json" type="button" aria-pressed="false">JSON</button></div><button id="copy-trace" class="text-button" type="button">Sao chép trace</button></div>
+            <div id="timeline-tools" class="presentation-toolbar"><span id="presentation-status">Đang hiện toàn bộ lượt</span><div><button id="step-previous" type="button" class="small-button" aria-label="Lượt trước">←</button><button id="step-next" type="button" class="small-button">Từng lượt →</button><button id="step-all" type="button" class="text-button">Hiện tất cả</button></div></div>
+            <div id="trace-timeline" class="timeline"></div>
+            <pre id="trace-json" class="raw-json" tabindex="0" hidden></pre>
+          </section>
+
+          <div class="answer-column">
+            <section class="panel answer-panel"><div class="panel-header"><div><span class="eyebrow">FINAL ANSWER</span><h3>Câu trả lời</h3></div><span class="answer-icon" aria-hidden="true">↗</span></div><div id="answer-content" class="markdown-content"></div></section>
+            <section class="panel grade-panel"><div class="panel-header"><div><span class="eyebrow">JUDGE + KIỂM TRA BẰNG CODE</span><h3>Vì sao được điểm này?</h3></div></div><div id="grade-content"></div></section>
+            <details class="panel expected-panel"><summary>Yêu cầu & đáp án kỳ vọng <span>＋</span></summary><div id="expected-content" class="markdown-content"></div><p class="microcopy">Đáp án kỳ vọng dùng để chấm eval, không được đưa cho agent khi trả lời.</p></details>
+          </div>
+        </div>
+        <footer class="main-footer"><span>Chu Nguyễn Tùng Dương <span>·</span> 2A202604016</span><span>Snapshot và điểm judge có giới hạn. Đọc trace để kiểm chứng.</span></footer>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

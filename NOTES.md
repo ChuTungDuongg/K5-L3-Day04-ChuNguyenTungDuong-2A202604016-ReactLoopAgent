@@ -1,39 +1,231 @@
 # Ghi chú phân tích · Day 04
 
-Họ và tên:
-MSSV:
+Họ và tên: Chu Nguyễn Tùng Dương
+
+MSSV: 2A202604016
 
 ## 1. Case được chọn
 
-- ID case:
-- Câu trả lời của agent:
-- Điểm ở lần chạy 1:
+- **Case chính: H6 — điều tra nhiều bước và dữ liệu nhiễu.**
+- **Câu hỏi:** “Xem status GitHub Actions, tìm incident h02n9572mx9y và theo liên kết của nó. Incident gộp có nêu nguyên nhân hay chỉ mô tả ảnh hưởng? Nêu giới hạn dữ liệu và trích nguồn.”
+- **Điểm trước cải tiến:** 95/100, trong `eval_before.json`.
+- **Câu trả lời trước cải tiến:** agent đọc đúng incident ban đầu, theo liên kết sang `xr3myzj7ms51`, trình bày nguyên nhân và ảnh hưởng, dẫn nguồn và nêu phần cập nhật bị cắt. Tuy nhiên, chưa trả lời rõ phần trạng thái GitHub/Actions trong snapshot.
+
+Trích câu trả lời ban đầu:
+
+> **Kết luận:** Incident gộp **có nêu nguyên nhân**, không chỉ mô tả ảnh hưởng.
+>
+> Incident `h02n9572mx9y` (“Incident with Actions”) hiện **đã resolved**. Cập nhật cuối của incident này hướng người đọc sang incident gộp `xr3myzj7ms51`.
+
+`resolved` là trạng thái của incident lịch sử, không thay thế câu trả lời về trạng thái dịch vụ. Nhận xét của judge cũng chỉ ra agent chưa nói rõ trạng thái tổng thể GitHub là “All Systems Operational”. Tôi chọn H6 vì có thể đối chiếu thiếu sót trực tiếp giữa câu hỏi, tool result và final answer, thay vì chỉ dựa vào điểm số.
+
+Phạm vi so sánh chính trong ghi chú này là `eval_before.json` với `eval_after.json`. File sau đã được chép nguyên từ `eval_after_v7.json`; hai file có cùng SHA-256. Các phiên bản v2–v6 là các thử nghiệm trung gian, được phân biệt rõ ở mục 4.
 
 ## 2. Bằng chứng trong trace
 
-Dán đoạn trace chứng minh lỗi và nêu nguyên nhân có thể xảy ra.
+### Bằng chứng H6 trước cải tiến
 
-```text
+Các đoạn JSON sau chỉ trích những trường liên quan từ `cases[id=H6].result.trace`; trường khác được lược bỏ để dễ đọc. Trace đầy đủ được giữ trong file eval.
 
+```json
+{
+  "event": "tool",
+  "step": 0,
+  "name": "get_status",
+  "arguments": {"provider": "github", "component": "GitHub Actions"},
+  "result": {
+    "overall": {"indicator": "none", "description": "All Systems Operational"},
+    "components": []
+  }
+}
 ```
+
+Tool đã cung cấp trạng thái tổng thể, nhưng final answer không nhắc lại thông tin đó. Ngoài ra, tham số tìm là `GitHub Actions`, trong khi tên component trong dữ liệu là `Actions`. Tool tìm theo chuỗi nên trả `components: []`; không thể suy ra từ trường rỗng rằng Actions không bị ảnh hưởng hay đang hoạt động bình thường.
+
+Agent vẫn thực hiện được chuỗi điều tra tiếp theo:
+
+```json
+{
+  "event": "tool",
+  "step": 0,
+  "name": "get_incident_details",
+  "arguments": {"provider": "github", "incident_id": "h02n9572mx9y"}
+}
+```
+
+Update mới nhất của incident này chứa liên kết đến `https://www.githubstatus.com/incidents/xr3myzj7ms51`. Tại `step: 1`, agent gọi `get_incident_details` cho ID được liên kết. Kết quả có `updates_total: 9`, nhưng chỉ trả một phần cập nhật; cập nhật chứa nguyên nhân có `truncated: true`. Vì thế có bằng chứng về nguyên nhân trong phần hiển thị, nhưng không có toàn bộ bản phân tích/hậu kiểm.
+
+**Nguyên nhân có thể xảy ra:** prompt ban đầu yêu cầu phân biệt status và incident nhưng chưa hướng dẫn rõ bằng chứng cần lấy cho từng ý hỏi. Model tập trung vào nguyên nhân của incident gộp và bỏ sót trạng thái dịch vụ khi tổng hợp. Cách chọn chuỗi tìm component cũng làm mất bằng chứng về trạng thái riêng của Actions. Đây là giả thuyết dựa trên hành vi quan sát được, không phải suy nghĩ nội bộ của model.
+
+### Bằng chứng H6 sau cải tiến
+
+Trong `eval_after.json`, tool call đầu dùng tên component ngắn hơn:
+
+```json
+{
+  "event": "tool",
+  "step": 0,
+  "name": "get_status",
+  "arguments": {"provider": "github", "component": "Actions"},
+  "result": {
+    "overall": {"indicator": "none", "description": "All Systems Operational"},
+    "components": [{"name": "Actions", "status": "operational"}]
+  }
+}
+```
+
+Final answer bắt đầu bằng “GitHub báo *All Systems Operational*; **Actions: operational**”, kèm thời điểm snapshot và nguồn. Agent vẫn theo liên kết incident, nêu nguyên nhân có trong dữ liệu, phân biệt thời điểm tạo/cập nhật với thời gian ảnh hưởng và cảnh báo phần nội dung bị cắt. H6 dùng 3 model calls, 3 tool calls trong 2 lượt có tool ở cả hai phiên bản; cải thiện quan sát được nằm ở lựa chọn tham số và mức độ đầy đủ của câu trả lời.
 
 ## 3. Thay đổi đã thực hiện
 
-- Sửa gì, ở đâu:
-- Vì sao chọn thay đổi này:
+### Prompt và agent loop trong `agent.py`
+
+1. **Chọn đủ loại bằng chứng.** Câu hỏi về trạng thái dịch vụ cần `get_status`; câu hỏi về incident cần `get_incident_details`. Nếu hỏi cả hai thì phải lấy cả hai, kể cả đã có ID. Mục tiêu là tránh dùng `resolved` của incident để suy ra trạng thái hiện tại của dịch vụ.
+2. **Tìm theo tên component phù hợp.** Dùng tên ngắn, không kèm tên provider; khi tìm rỗng, thử tên phù hợp hơn một lần nếu còn lượt. Kiểm tra đủ provider được hỏi, gộp các call độc lập và đọc liên kết incident khi cần điều tra nguyên nhân.
+3. **Ràng buộc phạm vi và thời gian.** Phân biệt overall/component/incident; component được gắn với dịch vụ được nhắc trong nội dung; thời điểm snapshot/tạo/cập nhật/xảy ra. Không mặc định danh sách theo thứ tự mới nhất, không coi khoảng tạo–cập nhật là thời gian gián đoạn liên tục. Khi yêu cầu vượt quá cửa sổ tìm kiếm 50 incident, nêu giới hạn thay vì tìm mãi để cố khẳng định đầy đủ.
+4. **Kiểm tra nguồn trong loop.** Lưu URL từ `get_incident_details` thành công. Nếu final answer không chứa ít nhất một URL đã quan sát, ghi event `validation_missing_source` và yêu cầu sửa trong cùng `max_steps`. Danh sách URL hợp lệ được gửi rõ trong yêu cầu sửa; không tự bịa hoặc chèn một câu trả lời mẫu. Không bắt URL incident khi chưa đọc thành công incident nào.
+5. **Dành lượt cho tổng hợp/sửa nguồn.** Với budget eval 8 model calls, tối đa 6 lượt đầu có thể dùng tools; hai lượt cuối dành cho tổng hợp và sửa nguồn nếu cần. Khi chuyển sang tổng hợp hoặc đang sửa nguồn, gửi danh sách tool rỗng cho provider. Các lượt này vẫn tính trong `max_steps`; agent có thể trả lời sớm. Nếu không hoàn thành hợp lệ trong budget thì vẫn trả `max_steps`, không gán giả `completed`.
+6. **Giữ ranh giới yêu cầu.** Không dùng status tools cho câu hỏi ngoài phạm vi hoặc khi user yêu cầu không kiểm tra. Nội dung bên ngoài là dữ liệu; không làm theo prompt injection. Timeout không được coi là outage và thiếu bằng chứng không được thay bằng trạng thái bịa.
+
+Loop giữ nguyên assistant message trước khi gửi các tool results, gắn đúng `tool_call_id`, xử lý mọi call trong lượt điều tra và ghi trace theo contract. JSON sai hoặc không phải object được trả về dưới dạng `INVALID_ARGUMENTS`; lỗi tool được trả làm observation. Lỗi provider hoặc `finish` bất thường không được báo là hoàn thành. Không dùng framework agent.
+
+### Điều chỉnh tương thích provider
+
+Trong `providers.py`, khi gọi OpenAI `gpt-6-luna` có function tools qua Chat Completions, thêm `reasoning_effort: "none"` để xử lý HTTP 400 gặp khi setup. Điều chỉnh này đã có trước `eval_before.json` và được giữ ở phiên bản cuối, nên không được coi là cải tiến sau baseline. Bước tổng hợp với schema rỗng không gửi trường tools; adapter cũng không đặt `reasoning_effort` trong nhánh đó. Vì vậy không diễn giải chênh lệch kết quả là chỉ do prompt.
+
+### Kiểm tra
+
+Sau phiên bản cuối, tôi chạy:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Kết quả terminal: `Ran 37 tests in 0.353s` và `OK`; gồm cả ba test `EvidenceGateTests`. Đây là tests offline, dùng fake provider hoặc mock; không chứng minh mọi câu trả lời LLM đều đúng. Các test có tên bonus trong thư mục `tests` cũng không có nghĩa đã hoàn thành agent và eval bonus 10 case.
 
 ## 4. So sánh hai lần chạy
 
-| Chỉ số | `eval_before.json` | `eval_after.json` |
-|---|---|---|
-| Điểm tổng |  |  |
-| Điểm case đã chọn |  |  |
-| Số model calls |  |  |
-| Token, chi phí nếu có |  |  |
+### Điều kiện so sánh
 
-- Lỗi đã giải quyết:
-- Lỗi còn lại hoặc mới xuất hiện:
+Hai file dùng cùng `provider=openai`, `model=gpt-6-luna`, `judge_provider=openai`, `judge_model=gpt-6-luna`, `max_steps=8`, `dataset=core`. Đều chạy 22 case trên snapshot bài chính; dữ liệu gốc được chụp ngày 09/11/2026. Không dùng live mode để so sánh.
+
+### Kết quả trước và sau
+
+| Chỉ số | `eval_before.json` | `eval_after.json` (v7) |
+|---|---:|---:|
+| Điểm tổng /100 | 98,50 | 98,95 |
+| Case được chấm | 22/22 | 22/22 |
+| Run có status `completed` | 22/22 | 22/22 |
+| Điểm H6 — case chính | 95 | 100 |
+| Model calls riêng H6 | 3 | 3 |
+| Model calls của agent, cả bộ | 67 | 56 |
+| Agent input tokens | 62.942 | 63.160 |
+| Agent output tokens | 8.177 | 7.362 |
+| Tổng agent tokens | 71.119 | 70.522 |
+| Agent cached input tokens (nằm trong input) | 25.817 | 12.917 |
+| Agent cache-write tokens theo usage (không cộng thêm vào tổng tokens) | 10.045 | 29.288 |
+| Judge input tokens | 41.103 | 35.737 |
+| Judge output tokens | 7.445 | 7.730 |
+| Tổng judge tokens | 48.548 | 43.467 |
+| Tổng token agent + judge | 119.667 | 113.989 |
+| Chi phí tiền tệ thực tế | API không trả số tiền | API không trả số tiền |
+
+Số model calls của agent được tính bằng tổng số phần tử `result.usage` của 22 case; token agent được cộng từ các phần tử đó. Token judge lấy từ `grade.judge_usage`. Các chỉ số này chỉ tính hai bộ eval được so sánh, không gồm các lần thử riêng hay các phiên bản trung gian. Cache và độ dài prompt khác nhau; giảm calls/tokens không tự chứng minh chi phí tiền tệ giảm tương ứng. Không có số tiền thực tế trong file nên tôi không báo một hóa đơn ước đoán như chi phí đã phát sinh.
+
+Điểm tổng tăng 0,45 điểm; agent giảm 11 model calls. Tuy nhiên input tokens tăng 218, output giảm 815; tổng token riêng agent chỉ giảm 597. Không suy ra chất lượng hoặc hiệu năng tăng toàn diện từ điểm trung bình.
+
+| Case | Trước | Sau v7 | Chênh lệch |
+|---|---:|---:|---:|
+| E1 | 100 | 95 | -5 |
+| E2 | 100 | 100 | 0 |
+| E3 | 100 | 100 | 0 |
+| E4 | 100 | 100 | 0 |
+| E5 | 98 | 100 | +2 |
+| E6 | 100 | 100 | 0 |
+| A1 | 100 | 91 | -9 |
+| A2 | 100 | 100 | 0 |
+| A3 | 90 | 100 | +10 |
+| A4 | 100 | 100 | 0 |
+| A5 | 93 | 93 | 0 |
+| A6 | 100 | 100 | 0 |
+| A7 | 99 | 100 | +1 |
+| A8 | 100 | 100 | 0 |
+| H1 | 99 | 100 | +1 |
+| H2 | 100 | 100 | 0 |
+| H3 | 100 | 100 | 0 |
+| H4 | 100 | 100 | 0 |
+| H5 | 95 | 98 | +3 |
+| H6 | 95 | 100 | +5 |
+| H7 | 100 | 100 | 0 |
+| H8 | 98 | 100 | +2 |
+
+### Lỗi được xử lý và lỗi còn lại
+
+- **H6:** câu trả lời cuối đã tách được trạng thái tổng thể, Actions và incident; trace vẫn đủ nhiều bước và có cảnh báo dữ liệu bị cắt. Đây là cải thiện có thể quan sát trực tiếp ngoài thay đổi điểm.
+- **E1 giảm 5 điểm:** judge muốn agent đề cập incident Actions ngày 05/11; câu trả lời tập trung vào các incident khác được trả về. Đây là hạn chế về lựa chọn ví dụ và mức độ đáp ứng yêu cầu chấm, không phải bằng chứng tất cả thông tin đã nêu là sai.
+- **A1 giảm 9 điểm:** câu trả lời có nguy cơ làm người đọc hiểu chỉ có đúng ba incident liên quan Actions, trong khi kết quả tìm còn có incident mang tên rộng hơn. Cần nói rõ phạm vi những incident đã đọc và không tuyên bố danh sách đầy đủ. Cách nêu phần nguyên nhân bị cắt cũng cần phân biệt phần đã nhìn thấy với phần còn thiếu.
+- **A5 giữ 93 điểm:** v7 trả lời được giới hạn lịch sử, không có danh sách giả và không hết bước. Judge trừ điểm vì chưa liệt kê ví dụ incident có trong snapshot. Các ví dụ năm 2026 không thể coi là danh sách năm 2025; nếu thêm ví dụ phải ghi đúng phạm vi.
+- **E5 tăng lên 100 nhưng chưa hoàn hảo:** câu trả lời v7 vẫn dùng cụm “gần đây nhất” và chưa nêu rõ cửa sổ tìm kiếm trong câu trả lời. Vì vậy việc judge cho đủ điểm không chứng minh giới hạn này đã được xử lý ổn định.
+
+### Các thử nghiệm trung gian
+
+Đã thực hiện nhiều vòng sau baseline, không chỉ một thay đổi. Các điểm dưới đây thuộc đúng phiên bản tương ứng, không thay thế hay sửa tay điểm trong baseline.
+
+| Phiên bản | Điểm tổng | Vấn đề quan sát được |
+|---|---:|---|
+| Baseline — `eval_before.json` | 98,50 | H6 thiếu trạng thái tổng thể trong final answer; một số giới hạn/thời gian chưa rõ |
+| Cải tiến đầu — kết quả ban đầu ghi ở `eval_after.json` | 94,45 | A5 hết bước; điểm này còn trong log terminal của buổi thực hành, file `eval_after.json` hiện đã thay bằng v7 |
+| v2 — `eval_after_v2.json` | 93,68 | A5 tiếp tục hết 8 lượt khi tìm/đọc thêm incident |
+| v3 — `eval_after_v3.json` | 97,09 | A5 đạt 100; A1 còn 56 vì tìm “Cloudflare Spectrum” không khớp “Spectrum” |
+| v4 — `eval_after_v4.json` | 96,27 | H4 còn 50 vì gọi status tools dù user yêu cầu chỉ viết thơ, không kiểm tra |
+| v5 — `eval_after_v5.json` | 94,73 | A5 trả lời ở step 5 nhưng thiếu URL; validation lặp ở step 5, 6, 7 rồi trả `max_steps` |
+| v6 — `eval_after_v6.json` | 96,91 | A5 đạt 100; H2 còn 50 do chỉ gọi chi tiết incident, thiếu `get_status` |
+| v7 — `eval_after_v7.json`, bản nộp `eval_after.json` | 98,95 | Cả 22 run hoàn thành; E1, A1, A5 và H5 vẫn bị trừ điểm |
+
+Ví dụ H2 ở v6 chỉ có `get_incident_details` cho `t89g2q1800fr`, sau đó model trả `finish: stop`. `grade.mechanical.violations` ghi “Chưa gọi tool cần thiết: get_status” và áp trần 50. V7 bổ sung quy tắc lấy cả hai loại bằng chứng cho câu hỏi hỏi cả trạng thái dịch vụ và incident. H2 v7 gọi đủ hai tools và đạt 100; **H2 baseline vốn đã là 100**, nên không báo đây là mức tăng từ baseline.
+
+Tương tự, A5 đạt 97 hoặc 100 khi chạy riêng ở một số lần nhưng vẫn được 0 trong các bộ eval khác. Điều này cho thấy kết quả một case đơn lẻ không đại diện độ ổn định của agent. Lỗi A5 v5 có nguyên nhân trực tiếp là vòng sửa nguồn hết budget, khác với các lần trước chỉ mải gọi tool.
+
+Các bản code được giữ trong `agent_truoc_cai_tien.py`, `agent_sau_cai_tien_lan_1.py` đến `agent_sau_cai_tien_lan_6.py`; `agent.py` là bản cuối. Không có case ID, đáp án hoặc incident ID cố định được thêm vào logic agent để trả lời sẵn.
+
+### Giao diện hỗ trợ demo trên localhost
+
+Ngoài agent loop và eval, tôi bổ sung UI demo trong thư mục `demo_ui/` để giảng viên có thể bấm xem 22 case từ bộ đề, so sánh các phiên bản và kiểm tra trace đã ghi trong các báo cáo. Đây là trình xem kết quả, không chạy lại agent hay gọi API model, không cần đọc API key và không sửa nội dung kết quả.
+
+**Hướng dẫn mở dành cho giảng viên:**
+
+1. Tải hoặc clone toàn bộ repository, giữ các file `eval_*.json` ở thư mục gốc. Máy cần Python 3.10+ và trình duyệt; không cần cài thêm package hoặc nhập API key để xem demo.
+2. Trên Windows, nhấp đúp **`start_demo.cmd`** tại thư mục gốc. Trình duyệt sẽ tự mở sau khi server sẵn sàng. File `.cmd` chỉ gọi PowerShell launcher `start_demo.ps1`; không cần mở file Python bằng tay.
+3. Nếu dùng terminal, mở terminal tại thư mục gốc repo và chạy lệnh sau, rồi truy cập **http://localhost:8000**:
+
+   ```bash
+   python demo_ui/server.py
+   ```
+
+   Nếu cổng 8000 đang bận, chạy `python demo_ui/server.py --port 8001` rồi mở http://localhost:8001. Nhấn Ctrl+C trong terminal để dừng server chạy theo cách này.
+
+4. Giao diện mặc định chọn phiên bản có số lớn nhất và case H6. Chọn một case bên trái để hiện câu hỏi, câu trả lời và trace. Chọn phiên bản ở danh sách “Phiên bản kết quả” để so sánh cùng case giữa các lần chạy.
+5. Bấm “Từng lượt” để trình bày lần lượt; mở mục JSON trong mỗi tool card để xem nguyên arguments và result. Có thể chọn **V5 → A5** để xem vòng sửa nguồn hết budget, **V6 → H2** để xem lỗi thiếu tool trạng thái, rồi đối chiếu với V7.
+6. Bấm “Chế độ đầy đủ” nếu muốn xem nhận xét judge, đáp án kỳ vọng và phần giải thích bài toán/tools. Bấm “Toàn màn hình” hoặc F11 để trình chiếu. Không có hành động nào trong UI tự chạy lại 22 case hoặc phát sinh token API.
+
+- **Khởi động:** nhấp đúp `start_demo.cmd` ở thư mục repo; file này gọi `start_demo.ps1`, ưu tiên Python trong `.venv`, chạy server nền và tự mở trình duyệt. Mặc định dùng cổng 8000; nếu cổng bận thì tìm cổng trống tiếp theo. Có thể chạy trực tiếp `python demo_ui/server.py` rồi mở `http://localhost:8000`.
+- **Các file:** `demo_ui/server.py` phục vụ dữ liệu và assets bằng thư viện chuẩn Python; `index.html`, `styles.css`, `app.js` tạo giao diện. Hướng dẫn dùng nằm trong `demo_ui/README.md`; log chạy nền được Git bỏ qua.
+- **Xem dữ liệu:** chọn phiên bản eval, bấm một trong 22 case, xem câu hỏi, điểm, final answer và trace theo từng lượt. Mỗi tool card hiển thị arguments, tóm tắt kết quả và JSON đầy đủ; có thể mở trace JSON nguyên bản và sao chép.
+- **Trình bày:** mặc định mở H6 ở chế độ trình chiếu; nút “Từng lượt” hiển thị dần các sự kiện đã lưu. Chế độ đầy đủ có nhận xét judge, đáp án kỳ vọng và mục giải thích bài toán/tools để chuẩn bị trình bày. Đáp án kỳ vọng chỉ để đối chiếu, không được đưa cho agent trong quá trình chạy eval.
+- **Phạm vi truy cập:** server lắng nghe trên `127.0.0.1`, chỉ phục vụ assets, bộ câu hỏi và các file báo cáo đúng mẫu; không dùng một directory server để công khai toàn bộ repo hoặc `.env`.
+- **Giới hạn xác minh:** chỉ rà soát file và đường dẫn lúc tạo UI, chưa chạy bộ kiểm thử giao diện hoặc kiểm tra trình duyệt có hệ thống. Kết quả 37 unit tests và 22 case eval ở trên thuộc agent và hạ tầng lab, không phải bằng chứng kiểm thử UI. Chế độ xem lại trace không được giới thiệu là một lượt agent đang chạy trực tiếp.
+
+### Trace để demo
+
+Chọn H6 trong `eval_after.json`: step 0 gọi status Actions và đọc incident ban đầu; step 1 theo ID trong liên kết sang incident gộp; step 2 trả lời. Giải thích được vì sao phải giữ assistant message, nối đúng tool-call ID, phân biệt hai trạng thái và không khẳng định đã đọc toàn bộ 9 cập nhật. Để minh họa lỗi, dùng A5 v5 hoặc H2 v6 thay vì bịa một tình huống thất bại.
 
 ## 5. Giới hạn
 
-Nêu giới hạn của điểm judge, của snapshot và của việc chỉ chạy một lần mỗi phiên bản.
+1. **Judge là phép đánh giá xấp xỉ.** Agent và judge đều dùng `gpt-6-luna`, có thể có thiên lệch khi cùng model chấm câu trả lời của mình. Ví dụ E5 được 100 ở v7 dù vẫn có cách diễn đạt về “gần đây nhất” cần thận trọng. Phải đọc expected, final answer, evidence và mechanical checks, không chỉ nhìn điểm.
+2. **Không thể kết luận nhân quả từ hai lần chạy.** Mỗi phiên bản chỉ có một bộ eval đầy đủ trong các file này. Không cố định được mọi biến ngẫu nhiên của model/judge; nhiều thay đổi prompt và loop được tích lũy cùng lúc. Điểm tăng 0,45 không chứng minh cải tiến chắc chắn tốt hơn hoặc mọi case ổn định hơn.
+3. **Đã điều chỉnh theo cùng bộ 22 case.** Nhiều vòng được phân tích trên tập cố định nên có nguy cơ quá phù hợp với bộ đề. Chưa đánh giá trên bộ câu hỏi độc lập, nhiều seed hoặc nhiều lần lặp của cùng phiên bản; không coi 98,95 là mức chất lượng ngoài thực tế.
+4. **Snapshot không phải trạng thái hiện tại.** Dữ liệu bài chính chụp ngày 09/11/2026, không xác nhận trạng thái dịch vụ sau đó. Kết quả còn bị giới hạn bởi tìm chuỗi trong 50 incident gần nhất, số mục được trả về và cập nhật bị lược/cắt. Không tìm thấy không chứng minh sự cố chưa từng tồn tại.
+5. **Nguồn và phạm vi suy luận.** Source validation chỉ kiểm tra có ít nhất một URL incident đã đọc xuất hiện; không bảo đảm mỗi claim đúng, mọi provider có nguồn đầy đủ hoặc URL là nguồn hỗ trợ đúng claim. Không có cơ chế code xác minh toàn bộ sự thật, quan hệ nhân quả hay phạm vi địa lý.
+6. **Budget có đánh đổi.** Dành hai lượt cuối để trả lời giúp tránh tìm mãi, nhưng có thể dừng điều tra trước khi thu thập đủ dữ liệu cho câu hỏi dài. Trong trường hợp đó phải báo thiếu bằng chứng. Việc có `completed` chỉ xác nhận kết thúc đúng luồng, không đồng nghĩa câu trả lời đủ/chính xác.
+7. **Phạm vi kiểm thử.** 37 unit tests đã đạt theo terminal ở phiên bản cuối; không suy ra live API luôn ổn định hoặc bonus đã hoàn thành. Các kết quả báo cáo ở đây thuộc bài chính, không có điểm bonus 10 case.
+8. **Tính trung thực của bằng chứng.** Giữ nguyên kết quả từng lần chạy, không sửa tay điểm/trace. Không sửa fixtures, cases, scenarios, grading, tests hoặc rubric để làm case pass. Có dùng AI hỗ trợ giải thích, chỉnh code/prompt và tổng hợp ghi chú từ trace thật; người nộp cần tự đối chiếu và giải thích được code, các thay đổi và giới hạn này.

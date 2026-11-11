@@ -1,0 +1,448 @@
+{
+  "summary": {
+    "total_cases": 1,
+    "scored_cases": 1,
+    "unscored_cases": 0,
+    "score_0_100": 97.0,
+    "partial_mean_0_100": null
+  },
+  "config": {
+    "provider": "openai",
+    "model": "gpt-6-luna",
+    "judge_provider": "openai",
+    "judge_model": "gpt-6-luna",
+    "max_steps": 8,
+    "dataset": "core"
+  },
+  "cases": [
+    {
+      "id": "A5",
+      "question": "Tôi cần danh sách đầy đủ tất cả incident GitHub Actions trong năm 2025. Hãy tìm dữ liệu và nói rõ độ đầy đủ của kết quả, đừng bịa.",
+      "expected": "Snapshot chỉ có tối đa 50 incident gần nhất; không thể chứng minh danh sách đầy đủ cho 2025. Không kết luận không có incident hoặc đưa danh sách giả.",
+      "scenario": "normal",
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "judge_provider": "openai",
+      "judge_model": "gpt-6-luna",
+      "result": {
+        "status": "completed",
+        "answer": "Tôi xin sửa lại: **chưa thể lập danh sách đầy đủ mọi incident GitHub Actions trong năm 2025** từ dữ liệu mà công cụ cung cấp.\n\nTruy vấn “Actions” chỉ xét **50 incident gần nhất**; snapshot lúc **2026-11-09 03:50 UTC** ghi nhận 23 incident khớp, nhưng không cung cấp danh sách đủ để lọc theo năm 2025. Các incident mà tôi kiểm tra chi tiết đều được tạo vào tháng 11/2026, nên không xác nhận được incident năm 2025. Điều đó **không chứng minh rằng năm 2025 không có sự cố**.\n\nURL sự cố do công cụ trả về: [Incident with Actions and Pages](https://stspg.io/pjgptg3cfc6n) — incident này được tạo ngày 2026-11-04, nên không thuộc năm 2025.\n\nĐể xác định danh sách đầy đủ, cần nguồn lưu trữ hoặc truy vấn lịch sử theo ngày có thể bao quát toàn bộ năm 2025; dữ liệu hiện có không cho phép xác nhận danh sách đó.",
+        "trace": [
+          {
+            "event": "model",
+            "step": 0,
+            "finish": "tool_calls"
+          },
+          {
+            "event": "tool",
+            "step": 0,
+            "name": "get_status",
+            "arguments": {
+              "provider": "github",
+              "component": "Actions"
+            },
+            "result": {
+              "provider": "github",
+              "captured_at": "2026-11-09T03:50:47.065020+00:00",
+              "overall": {
+                "indicator": "none",
+                "description": "All Systems Operational"
+              },
+              "components": [
+                {
+                  "name": "Actions",
+                  "status": "operational"
+                }
+              ],
+              "incidents": [
+                {
+                  "id": "pfbmpxxfq1cy",
+                  "name": "Degraded performance for multiple GitHub services",
+                  "status": "resolved",
+                  "updated_at": "2026-11-06T00:20:49.369Z"
+                },
+                {
+                  "id": "t89g2q1800fr",
+                  "name": "Incident with Actions",
+                  "status": "resolved",
+                  "updated_at": "2026-11-05T17:42:35.455Z"
+                },
+                {
+                  "id": "h02n9572mx9y",
+                  "name": "Incident with Actions",
+                  "status": "resolved",
+                  "updated_at": "2026-11-07T01:10:18.506Z"
+                },
+                {
+                  "id": "xr3myzj7ms51",
+                  "name": "Incident with Actions and Pages",
+                  "status": "resolved",
+                  "updated_at": "2026-11-07T01:04:38.647Z"
+                },
+                {
+                  "id": "smtdswd1h2w4",
+                  "name": "Incident with Pull Requests, Git Operations and Issues",
+                  "status": "resolved",
+                  "updated_at": "2026-11-04T11:50:06.459Z"
+                }
+              ],
+              "matching_incidents_in_last_50": 23,
+              "note": "Chỉ tìm theo chuỗi trong 50 incident gần nhất; không tìm thấy không chứng minh không có sự cố.",
+              "source": "https://www.githubstatus.com"
+            }
+          },
+          {
+            "event": "model",
+            "step": 1,
+            "finish": "tool_calls"
+          },
+          {
+            "event": "tool",
+            "step": 1,
+            "name": "get_incident_details",
+            "arguments": {
+              "provider": "github",
+              "incident_id": "pfbmpxxfq1cy"
+            },
+            "result": {
+              "ok": true,
+              "provider": "github",
+              "captured_at": "2026-11-09T03:50:47.065020+00:00",
+              "id": "pfbmpxxfq1cy",
+              "name": "Degraded performance for multiple GitHub services",
+              "status": "resolved",
+              "created_at": "2026-11-05T23:36:06.204Z",
+              "updated_at": "2026-11-06T00:20:49.369Z",
+              "components": [
+                "Git Operations",
+                "Issues",
+                "Actions",
+                "Pages"
+              ],
+              "updates": [
+                {
+                  "status": "resolved",
+                  "created_at": "2026-11-06T00:20:49.344Z",
+                  "body": "This incident has been resolved. Thank you for your patience and understanding as we addressed this issue. A detailed root cause analysis will be shared as soon as it is available.",
+                  "truncated": false
+                },
+                {
+                  "status": "monitoring",
+                  "created_at": "2026-11-06T00:19:59.777Z",
+                  "body": "This incident has been resolved. All affected services, including Git operations, Issues, Actions, and API access, have recovered and remained stable. Thank you for your patience. We'll share more details in our availability report.",
+                  "truncated": false
+                },
+                {
+                  "status": "investigating",
+                  "created_at": "2026-11-05T23:36:06.333Z",
+                  "body": "We are investigating reports of degraded performance for Actions and Pages",
+                  "truncated": false
+                }
+              ],
+              "updates_total": 8,
+              "url": "https://stspg.io/s5bs6jn41fwh"
+            }
+          },
+          {
+            "event": "tool",
+            "step": 1,
+            "name": "get_incident_details",
+            "arguments": {
+              "provider": "github",
+              "incident_id": "t89g2q1800fr"
+            },
+            "result": {
+              "ok": true,
+              "provider": "github",
+              "captured_at": "2026-11-09T03:50:47.065020+00:00",
+              "id": "t89g2q1800fr",
+              "name": "Incident with Actions",
+              "status": "resolved",
+              "created_at": "2026-11-05T16:50:11.086Z",
+              "updated_at": "2026-11-05T17:42:35.455Z",
+              "components": [
+                "Actions"
+              ],
+              "updates": [
+                {
+                  "status": "resolved",
+                  "created_at": "2026-11-05T17:42:35.425Z",
+                  "body": "This incident has been resolved. Thank you for your patience and understanding as we addressed this issue. A detailed root cause analysis will be shared as soon as it is available.",
+                  "truncated": false
+                },
+                {
+                  "status": "monitoring",
+                  "created_at": "2026-11-05T17:04:46.807Z",
+                  "body": "The degradation affecting Actions has been mitigated. We are monitoring to ensure stability.",
+                  "truncated": false
+                },
+                {
+                  "status": "investigating",
+                  "created_at": "2026-11-05T16:50:11.189Z",
+                  "body": "We are investigating reports of degraded performance for Actions",
+                  "truncated": false
+                }
+              ],
+              "updates_total": 4,
+              "url": "https://stspg.io/lv4q3xm9r0rk"
+            }
+          },
+          {
+            "event": "tool",
+            "step": 1,
+            "name": "get_incident_details",
+            "arguments": {
+              "provider": "github",
+              "incident_id": "h02n9572mx9y"
+            },
+            "result": {
+              "ok": true,
+              "provider": "github",
+              "captured_at": "2026-11-09T03:50:47.065020+00:00",
+              "id": "h02n9572mx9y",
+              "name": "Incident with Actions",
+              "status": "resolved",
+              "created_at": "2026-11-04T17:40:33.675Z",
+              "updated_at": "2026-11-07T01:10:18.506Z",
+              "components": [
+                "Actions"
+              ],
+              "updates": [
+                {
+                  "status": "resolved",
+                  "created_at": "2026-11-04T18:16:08.361Z",
+                  "body": "Please refer to the combined summary in this related incident: https://www.githubstatus.com/incidents/xr3myzj7ms51",
+                  "truncated": false
+                },
+                {
+                  "status": "monitoring",
+                  "created_at": "2026-11-04T18:07:51.114Z",
+                  "body": "The degradation affecting Actions has been mitigated. We are monitoring to ensure stability.",
+                  "truncated": false
+                },
+                {
+                  "status": "investigating",
+                  "created_at": "2026-11-04T17:40:33.887Z",
+                  "body": "We are investigating reports of degraded availability for Actions",
+                  "truncated": false
+                }
+              ],
+              "updates_total": 4,
+              "url": "https://stspg.io/7pwv28hvkmz8"
+            }
+          },
+          {
+            "event": "tool",
+            "step": 1,
+            "name": "get_incident_details",
+            "arguments": {
+              "provider": "github",
+              "incident_id": "xr3myzj7ms51"
+            },
+            "result": {
+              "ok": true,
+              "provider": "github",
+              "captured_at": "2026-11-09T03:50:47.065020+00:00",
+              "id": "xr3myzj7ms51",
+              "name": "Incident with Actions and Pages",
+              "status": "resolved",
+              "created_at": "2026-11-04T16:05:31.580Z",
+              "updated_at": "2026-11-07T01:04:38.647Z",
+              "components": [
+                "Webhooks",
+                "Actions",
+                "Pages"
+              ],
+              "updates": [
+                {
+                  "status": "resolved",
+                  "created_at": "2026-11-04T17:01:11.503Z",
+                  "body": "On November 4, 2026, between 15:49 UTC and 16:48 UTC, and again between 17:20 UTC and 17:55 UTC, GitHub Actions, Pages, Webhooks, Code Scanning, and Copilot coding agent experienced delays. During this time, Actions workflow runs and job status updates were delayed by up to 25 minutes. Pages deployments dropped to about 4% of normal volume, webhook deliveries dropped to about 58% of normal volume, and Code Scanning analyses and Copilot coding agent sessions were delayed. Delayed events were processed after mitigation. <br /><br />This incident was caused by a configuration change to an internal event-routing service that unexpectedly paused delivery of several event streams. The change depended on feature flags that were not set up as intended, which the service did not handle gracefully. We mitigated the first period by rolling back the configuration change at 16:14 UTC. The code change",
+                  "truncated": true
+                },
+                {
+                  "status": "monitoring",
+                  "created_at": "2026-11-04T16:49:27.384Z",
+                  "body": "The degradation has been mitigated. We are monitoring to ensure stability.",
+                  "truncated": false
+                },
+                {
+                  "status": "investigating",
+                  "created_at": "2026-11-04T16:05:31.696Z",
+                  "body": "We are investigating reports of degraded performance for Actions and Pages",
+                  "truncated": false
+                }
+              ],
+              "updates_total": 9,
+              "url": "https://stspg.io/pjgptg3cfc6n"
+            }
+          },
+          {
+            "event": "tool",
+            "step": 1,
+            "name": "get_incident_details",
+            "arguments": {
+              "provider": "github",
+              "incident_id": "smtdswd1h2w4"
+            },
+            "result": {
+              "ok": true,
+              "provider": "github",
+              "captured_at": "2026-11-09T03:50:47.065020+00:00",
+              "id": "smtdswd1h2w4",
+              "name": "Incident with Pull Requests, Git Operations and Issues",
+              "status": "resolved",
+              "created_at": "2026-11-04T09:49:55.685Z",
+              "updated_at": "2026-11-04T11:50:06.459Z",
+              "components": [
+                "Git Operations",
+                "API Requests",
+                "Issues",
+                "Pull Requests",
+                "Actions"
+              ],
+              "updates": [
+                {
+                  "status": "resolved",
+                  "created_at": "2026-11-04T11:50:06.424Z",
+                  "body": "This incident has been resolved. Thank you for your patience and understanding as we addressed this issue. A detailed root cause analysis will be shared as soon as it is available.",
+                  "truncated": false
+                },
+                {
+                  "status": "monitoring",
+                  "created_at": "2026-11-04T11:43:52.025Z",
+                  "body": "The degradation affecting Actions has been mitigated. We are monitoring to ensure stability.",
+                  "truncated": false
+                },
+                {
+                  "status": "investigating",
+                  "created_at": "2026-11-04T09:49:55.863Z",
+                  "body": "We are investigating reports of degraded performance for Git Operations, Issues and Pull Requests",
+                  "truncated": false
+                }
+              ],
+              "updates_total": 9,
+              "url": "https://stspg.io/18blsgwnbyy6"
+            }
+          },
+          {
+            "event": "model",
+            "step": 2,
+            "finish": "stop"
+          },
+          {
+            "event": "validation_missing_source",
+            "step": 2
+          },
+          {
+            "event": "model",
+            "step": 3,
+            "finish": "stop"
+          }
+        ],
+        "usage": [
+          {
+            "prompt_tokens": 585,
+            "completion_tokens": 21,
+            "total_tokens": 606,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "cache_write_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          },
+          {
+            "prompt_tokens": 990,
+            "completion_tokens": 157,
+            "total_tokens": 1147,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "cache_write_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          },
+          {
+            "prompt_tokens": 2976,
+            "completion_tokens": 268,
+            "total_tokens": 3244,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "cache_write_tokens": 2973,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          },
+          {
+            "prompt_tokens": 3271,
+            "completion_tokens": 241,
+            "total_tokens": 3512,
+            "prompt_tokens_details": {
+              "cached_tokens": 2973,
+              "cache_write_tokens": 295,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          }
+        ]
+      },
+      "grade": {
+        "score": 97,
+        "raw_judge_score": 97,
+        "dimensions": {
+          "factuality": 40,
+          "completeness": 24,
+          "evidence": 18,
+          "boundaries": 15
+        },
+        "status": "scored",
+        "reason": "Câu trả lời nêu đúng giới hạn 50 incident gần nhất, không giả vờ có danh sách đầy đủ cho năm 2025 và không suy diễn rằng năm đó không có sự cố. Số incident khớp và ví dụ liên kết phù hợp với trace; kết quả không thể đầy đủ hơn vì dữ liệu không hỗ trợ lọc toàn bộ năm 2025.",
+        "improvement": "Có thể dẫn thêm trang nguồn GitHub Status tổng quát và ghi rõ đây chỉ là ví dụ incident năm 2026, không phải danh sách incident năm 2025.",
+        "mechanical": {
+          "violations": [],
+          "score_cap": 100,
+          "tool_calls": 6,
+          "tool_steps": 2
+        },
+        "judge_usage": {
+          "prompt_tokens": 3332,
+          "completion_tokens": 548,
+          "total_tokens": 3880,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "cache_write_tokens": 3329,
+            "audio_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 395,
+            "audio_tokens": 0,
+            "accepted_prediction_tokens": 0,
+            "rejected_prediction_tokens": 0
+          }
+        },
+        "judge_trace_truncated": false
+      }
+    }
+  ]
+}
