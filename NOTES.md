@@ -124,15 +124,78 @@ Hai file dùng cùng `provider=openai`, `model=gpt-6-luna`, `judge_provider=open
 | Tổng agent tokens | 71.119 | 70.522 |
 | Agent cached input tokens (nằm trong input) | 25.817 | 12.917 |
 | Agent cache-write tokens theo usage (không cộng thêm vào tổng tokens) | 10.045 | 29.288 |
+| Agent input thường = input − đọc cache − ghi cache | 27.080 | 20.955 |
 | Judge input tokens | 41.103 | 35.737 |
+| Judge cached input tokens | 0 | 0 |
+| Judge cache-write tokens | 39.893 | 33.870 |
+| Judge input thường = input − đọc cache − ghi cache | 1.210 | 1.867 |
 | Judge output tokens | 7.445 | 7.730 |
 | Tổng judge tokens | 48.548 | 43.467 |
 | Tổng token agent + judge | 119.667 | 113.989 |
-| Chi phí tiền tệ thực tế | API không trả số tiền | API không trả số tiền |
+| Chi phí agent ước tính, USD | 0,008310295 | 0,009566670 |
+| Chi phí judge ước tính, USD | 0,008830125 | 0,008285450 |
+| Tổng agent + judge ước tính, USD | **0,017140420** | **0,017852120** |
+| Số tiền đã đối soát hóa đơn | Chưa đối soát | Chưa đối soát |
 
-Số model calls của agent được tính bằng tổng số phần tử `result.usage` của 22 case; token agent được cộng từ các phần tử đó. Token judge lấy từ `grade.judge_usage`. Các chỉ số này chỉ tính hai bộ eval được so sánh, không gồm các lần thử riêng hay các phiên bản trung gian. Cache và độ dài prompt khác nhau; giảm calls/tokens không tự chứng minh chi phí tiền tệ giảm tương ứng. Không có số tiền thực tế trong file nên tôi không báo một hóa đơn ước đoán như chi phí đã phát sinh.
+Số model calls của agent được tính bằng tổng số phần tử `result.usage` của 22 case; token agent được cộng từ các phần tử đó. Token judge lấy từ `grade.judge_usage`. Các chỉ số trong bảng này chỉ tính hai bộ eval được so sánh, không gồm các lần thử riêng hay các phiên bản trung gian. Chi phí được suy ra từ token và bảng giá chính thức tra ngày 12/11/2026; đây là **ước tính giá niêm yết**, không phải số tiền đã xác nhận trên hóa đơn hoặc Usage Dashboard.
 
 Điểm tổng tăng 0,45 điểm; agent giảm 11 model calls. Tuy nhiên input tokens tăng 218, output giảm 815; tổng token riêng agent chỉ giảm 597. Không suy ra chất lượng hoặc hiệu năng tăng toàn diện từ điểm trung bình.
+
+### Đơn giá và cách tính chi phí API
+
+Nguồn tra ngày **12/11/2026**: [trang model GPT-6 Luna của OpenAI](https://developers.openai.com/api/docs/models/gpt-6-luna) và [hướng dẫn prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching). Đơn vị dưới đây là **USD cho mỗi 1.000.000 token**, với Standard processing, prompt ngắn và cache mặc định 30 phút:
+
+| Loại token | Đơn giá USD / 1 triệu token |
+|---|---:|
+| Input thường, không đọc/ghi cache | 0,10 |
+| Đọc cache — `cached_tokens` | 0,01 |
+| Ghi cache — `cache_write_tokens`, TTL mặc định 30 phút | 0,125 |
+| Output — `completion_tokens` | 0,50 |
+
+Adapter không yêu cầu Batch/Flex/Fast, cache 12 giờ hoặc xử lý theo vùng. Vì log không lưu đầy đủ tier thực tế hay hóa đơn, phép tính giả định Standard và cache mặc định; không cộng phụ phí thuế/vùng, không trừ ưu đãi hoặc credit tài khoản. Prompt lớn nhất ghi nhận trong các file là **4.654 input tokens cho một request**, nên phép tính không dùng giá long-context. Đây là độ dài từng request, không phải tổng input cộng qua nhiều lượt.
+
+Theo tài liệu caching, số token đọc cache và ghi cache đã nằm trong tổng input và được tách thành các nhóm tính giá; không cộng chúng thêm lần nữa. Công thức áp dụng riêng cho agent và judge:
+
+```text
+P = tổng prompt_tokens
+R = tổng prompt_tokens_details.cached_tokens
+W = tổng prompt_tokens_details.cache_write_tokens
+O = tổng completion_tokens
+U = P - R - W
+
+Chi phí ước tính (USD) = (U × 0,10 + R × 0,01 + W × 0,125 + O × 0,50) / 1.000.000
+```
+
+`completion_tokens` đã bao gồm reasoning tokens được provider báo trong output; không cộng reasoning một lần nữa. Với log thiếu `cache_write_tokens`, chỉ xem giá trị thiếu là 0 để ước tính theo dữ liệu hiện có. Không có request nào trong các file được cộng có R + W lớn hơn P.
+
+Hai bộ so sánh chính có tổng ước tính **0,034992540 USD**. Riêng v7 tốn hơn baseline khoảng **0,000711700 USD** dù tổng token giảm: agent ghi cache nhiều hơn và đọc cache ít hơn. Đây là ví dụ vì sao giảm token/calls không tự động đồng nghĩa giảm tiền API.
+
+### Ước tính cho các lần eval còn lưu file
+
+Bảng sau cộng cả agent và judge, dùng cùng công thức. Không tính trùng `eval_after.json` vì file này là bản sao byte-for-byte của `eval_after_v7.json`.
+
+| File kết quả | Số case | Tổng chi phí ước tính, USD |
+|---|---:|---:|
+| `eval_before.json` | 22 | 0,017140420 |
+| `eval_after_v2.json` | 22 | 0,019548040 |
+| `eval_after_v3.json` | 22 | 0,017981555 |
+| `eval_after_v4.json` | 22 | 0,020870850 |
+| `eval_after_v5.json` | 22 | 0,019484715 |
+| `eval_after_v6.json` | 22 | 0,019417380 |
+| `eval_after_v7.json` | 22 | 0,017852120 |
+| `eval_a1_thu_lai.json` | 1 | 0,001573955 |
+| `eval_a5_nhac_luot_cuoi.json` | 1 | 0,001033950 |
+| `eval_a5_thu_lai.json` | 1 | 0,001630255 |
+| `eval_h4_thu_lai.json` | 1 | 0,000246300 |
+| **Cộng 11 báo cáo trong repo, không tính bản sao v7** | **158** | **0,136779540** |
+| `eval_results_e2.json` — lần thử ban đầu, file hiện chỉ lưu local do `.gitignore` | 1 | 0,000638625 |
+| **Cộng 12 báo cáo khác nhau còn trên máy** | **159** | **0,137418165** |
+
+Tổng local tương ứng **458 kết quả gọi agent** và **157 kết quả gọi judge có usage**; hai case A5 hết bước ở v2/v5 được chấm 0 bằng code và không có usage judge. Phần agent ước tính 0,074082040 USD, phần judge 0,063336125 USD. Chi phí UI xem lại trace là 0 USD về LLM/API vì UI không gọi model.
+
+**Không coi 0,137418165 USD là tổng hóa đơn toàn bộ buổi lab.** Một số lần eval cũ đã bị ghi đè, gồm baseline thử trước đó và lần cải tiến đầu 94,45 điểm; các lần gọi thử kết nối/chạy agent không lưu báo cáo hoặc retry judge không được giữ usage cũng chưa cộng được. Chỉ xem tổng này là ước tính cho phần log còn ghi nhận; muốn biết số tiền bị tính thực sự cần đối chiếu Usage/Billing của project OpenAI tương ứng. Không dùng số tiền nạp tài khoản làm chi phí riêng của bài lab.
+
+### Điểm từng case trước và sau
 
 | Case | Trước | Sau v7 | Chênh lệch |
 |---|---:|---:|---:|
